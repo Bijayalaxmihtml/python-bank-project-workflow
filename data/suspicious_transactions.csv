@@ -1,0 +1,1 @@
+transaction_id,timestamp,amount,currency,sender_account,receiver_account,sender_country,sender_municipality,receiver_country,receiver_municipality,transaction_type,notes
