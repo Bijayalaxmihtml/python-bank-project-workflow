@@ -17,12 +17,25 @@ class Customer(Base):
     accounts = relationship('Account', back_populates='customer')
 
 
+class Bank(Base):
+    __tablename__ = 'banks'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    address = Column(String)
+    swift_code = Column(String, unique=True)
+
+    accounts = relationship('Account', back_populates='bank')
+
+
 class Account(Base):
-    __tablename__ = 'accounts'  # renamed from 'bank_accounts'
+    __tablename__ = 'accounts'
 
     account_number = Column(String, primary_key=True)
     customer_id = Column(Integer, ForeignKey('customers.customer_id'), nullable=False)
     bank_id = Column(Integer, ForeignKey('banks.id'), nullable=True)
+    country = Column(String, nullable=True)
+    municipality = Column(String, nullable=True)
 
     # Relationships
     customer = relationship('Customer', back_populates='accounts')
@@ -68,14 +81,3 @@ class Transaction(Base):
         foreign_keys=[receiver_account],
         back_populates='received_transactions'
     )
-
-
-class Bank(Base):
-    __tablename__ = 'banks'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-    address = Column(String)
-    swift_code = Column(String, unique=True)
-
-    accounts = relationship('Account', back_populates='bank')

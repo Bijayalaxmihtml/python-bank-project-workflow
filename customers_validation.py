@@ -4,6 +4,20 @@ import re
 
 CUSTOMERS_CSV_PATH = r"./data/sebank_customers_with_accounts_original.csv"
 
+def luhn_checksum(num_str: str) -> bool:
+    """
+    Calculate Luhn checksum for Swedish personnummer (without century)
+    and validate it.
+    """
+    digits = [int(d) for d in num_str]
+    total = 0
+    for i, d in enumerate(digits):
+        if i % 2 == 0:
+            doubled = d * 2
+            total += doubled if doubled < 10 else doubled - 9
+        else:
+            total += d
+    return total % 10 == 0
 
 class Customer(BaseModel):
     name: str
@@ -14,24 +28,31 @@ class Customer(BaseModel):
 
     @field_validator('phone')
     def phone_must_be_valid(cls, v):
-        # Accept digits, spaces, dashes, plus, parentheses for phone numbers
-        if not re.match(r'^\+?[\d\s\-\(\)]+$', v):
+        if not isinstance(v, str) or not re.match(r'^\+?[\d\s\-\(\)]+$', v):
             raise ValueError('Invalid phone number format')
-        return v
+        # Normalize phone by removing spaces and dashes
+        normalized = re.sub(r'[\s\-]', '', v)
+        return normalized
 
     @field_validator('personnummer')
     def validate_personnummer(cls, v):
-        # Swedish personal identity number format e.g. 400118-5901 or 400118+5901
-        if not re.match(r'^\d{6}[-+]\d{4}$', v):
+        if not isinstance(v, str) or not re.match(r'^\d{6}[-+]\d{4}$', v):
             raise ValueError('Invalid personnummer format')
+        # Remove separator to get digits only for checksum
+        digits_only = v.replace("-", "").replace("+", "")
+        if not luhn_checksum(digits_only):
+            raise ValueError('Personnummer failed checksum validation')
         return v
 
     @field_validator('bank_account')
     def validate_bank_account(cls, v):
-        # Basic check: starts with 'SE' and length is 24 characters (IBAN format for Sweden)
-        if not (v.startswith('SE') and len(v) == 24):
+        if not isinstance(v, str):
+            raise ValueError('Bank account must be a string')
+        # Clean IBAN first: remove spaces/dashes and uppercase
+        clean_v = re.sub(r'[^0-9A-Za-z]', '', v).upper()
+        if not (clean_v.startswith('SE') and len(clean_v) == 24):
             raise ValueError('Invalid Swedish bank account number')
-        return v
+        return clean_v
 
 
 def validate_customers():
@@ -57,8 +78,7 @@ def validate_customers():
             customer = Customer(**row.to_dict())
             valid_customers.append(customer)
         except ValidationError as e:
-            # +2 to account for header and 0-index difference in row number
-            errors.append((idx + 2, e.errors()))
+            errors.append((idx + 2, e.errors()))  # +2 for header + 0-based idx
 
     print(f" Validated {len(valid_customers)} customers successfully.")
 
@@ -85,4 +105,3 @@ def validate_customers():
 
 if __name__ == "__main__":
     validate_customers()
-
