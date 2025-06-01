@@ -15,8 +15,11 @@ We have a number of folders containing files we have used but we also have loose
 
 ---
 
+
 ## Data: 
+
 You'll find all transactions that are invalid, cleaned and a orginal copy of said file. You will also find customer data that are cleaned.
+
 - clean_transactions_pipeline.py
 - cleaned_customers.csv
 - cleaned_transactions.csv
